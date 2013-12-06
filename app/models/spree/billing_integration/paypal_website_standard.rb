@@ -5,17 +5,20 @@ class Spree::BillingIntegration::PaypalWebsiteStandard < Spree::BillingIntegrati
   #  :preferred_currency, :preferred_language,
   #  :preferred_server, :preferred_test_mode
 
+  require 'rbconfig'
+
   preference :account_email, :string
   preference :ipn_notify_host, :string
+  preference :ipn_secret, :string
   preference :success_url, :string
-  #sandbox paypal_url: https://www.sandbox.paypal.com/cgi-bin/webscr
-  #production paypal_url: https://www.paypal.com/cgi-bin/webscr
-  preference :paypal_url, :string, :default => 'https://www.sandbox.paypal.com/cgi-bin/webscr'
+  preference :paypal_url, :string, :default => 'https://www.paypal.com/cgi-bin/webscr'
+  preference :sandbox_url, :string, :default => 'https://www.sandbox.paypal.com/cgi-bin/webscr'
   preference :encryption, :boolean, :default => false
   preference :certificate_id, :string
-  preference :currency, :string, :default => "USD"
+  preference :currency, :string, :default => "EUR"
   preference :language, :string, :default => "en"
-
+  preference :page_style, :string
+  preference :populate_address, :boolean, :default => true
 
   def payment_profiles_supported?
     false
