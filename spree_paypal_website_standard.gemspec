@@ -9,15 +9,15 @@ Gem::Specification.new do |s|
   s.description = 'Spree extension for integration with PayPal Website Standard payment'
   s.required_ruby_version = '>= 1.9.2'
 
-  s.author            = 'Gregg Pollack, Sean Schofield, Tomasz Stachewicz, Buddhi DeSilva'
-  s.email             = 'tomekrs@o2.pl'
-  s.homepage          = 'http://github.com/tomash/spree-pp-website-standard'
+  s.author            = 'Gregg Pollack, Sean Schofield, Tomasz Stachewicz, Buddhi DeSilva, Rui Leitão'
+  s.email             = 'rmleitao@thinkorange.pt'
+  s.homepage          = 'http://github.com/rmleitao/spree-pp-website-standard'
 
   s.files        = Dir['CHANGELOG', 'README.md', 'LICENSE', 'lib/**/*', 'app/**/*']
   s.require_path = 'lib'
   s.requirements << 'none'
 
-  s.add_dependency 'spree_core', '~> 1.1.2'
+  s.add_dependency 'spree_core', '~> 2.1.4.beta'
 
   s.add_development_dependency 'capybara', '1.0.1'
   s.add_development_dependency 'factory_girl'
