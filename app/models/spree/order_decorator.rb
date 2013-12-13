@@ -17,18 +17,6 @@ Spree::Order.class_eval do
     Spree::PaymentMethod.select{ |pm| pm.name.downcase =~ /paypal/}.first
   end
   
-  # commented-out, will be removed
-  # decide on configuration/preference side whether you want encrypted payments
-  #def self.use_encrypted_paypal_link?
-    #Spree::PaypalWebsiteStandard::Config.encrypted &&
-    #Spree::PaypalWebsiteStandard::Config.ipn_secret &&
-    #Spree::PaypalWebsiteStandard::Config.cert_id &&
-    #File.exist?(PAYPAL_CERT_PEM) &&
-    #File.exist?(APP_CERT_PEM) &&
-    #File.exist?(APP_KEY_PEM)
-  #end
-  
-  #def paypal_encrypted(payment_notifications_url, options = {})
   def paypal_encrypted(paypal_configuration, payment_notifications_url, options = {})
     values = {
       :business => paypal_configuration.preferred_account_email,
@@ -63,6 +51,14 @@ Spree::Order.class_eval do
     app_key = File.read(APP_KEY_PEM)
     signed = OpenSSL::PKCS7::sign(OpenSSL::X509::Certificate.new(app_cert), OpenSSL::PKey::RSA.new(app_key, ''), values.map { |k, v| "#{k}=#{v}" }.join("\n"), [], OpenSSL::PKCS7::BINARY)
     OpenSSL::PKCS7::encrypt([OpenSSL::X509::Certificate.new(paypal_cert)], signed.to_der, OpenSSL::Cipher::Cipher::new("DES3"), OpenSSL::PKCS7::BINARY).to_s.gsub("\n", "")
+  end
+
+  # rmleitao:
+  # this will allow orders to advance to complete in case there are no pending payments, 
+  # but everything has already been paid
+  def payment_required?
+    #total.to_f > 0.0
+    total > payment_total
   end
 
 end

@@ -6,7 +6,7 @@
 %>
 
 <%= form_tag submit_url do %> 
-  <%= submit_url %>
+  
   <%- if(payment_method.preferred_encryption) %>
     <%= hidden_field_tag(:cmd, "_s-xclick") %>
     <%= hidden_field_tag(:encrypted, @order.paypal_encrypted(payment_method, payment_notifications_url(:secret => payment_method.preferred_ipn_secret))) %>
@@ -16,27 +16,33 @@
     <input id="business" name="business" type="hidden" value="<%= payment_method.preferred_account_email %>" />
     <input id="invoice" name="invoice" type="hidden" value="<%= @order.number %>" />
     
-    <% @order.line_items.each_with_index do |item, index| %>
-      <%- if item.variant.respond_to?(:paypal_name) %>
-        <input id="item_name_<%= index + 1 %>" name="item_name_<%= index + 1 %>" type="hidden" value="<%=  item.variant.paypal_name  %>"  />
-      <% else %>
-        <input id="item_name_<%= index + 1 %>" name="item_name_<%= index + 1 %>" type="hidden" value="<%= item.variant.product.name %>" />
-      <% end %>
-      <input id="amount_<%= index + 1 %>" name="amount_<%= index + 1 %>" type="hidden" value="<%= item.price %>" />
-      <input id="quantity_<%= index + 1 %>" name="quantity_<%= index + 1 %>" type="hidden" value="<%= item.quantity %>" />
-    <% end %>
+    <%# @order.line_items.each_with_index do |item, index| %>
+      <%#- if item.variant.respond_to?(:paypal_name) %>
+        <!-- <input id="item_name_<%#= index + 1 %>" name="item_name_<%#= index + 1 %>" type="hidden" value="<%#=  item.variant.paypal_name  %>"  /> -->
+      <%# else %>
+        <!-- <input id="item_name_<%#= index + 1 %>" name="item_name_<%#= index + 1 %>" type="hidden" value="<%#= item.variant.product.name %>" /> -->
+      <%# end %>
+      <!-- <input id="amount_<%#= index + 1 %>" name="amount_<%#= index + 1 %>" type="hidden" value="<%#= item.price %>" />
+      <input id="quantity_<%#= index + 1 %>" name="quantity_<%#= index + 1 %>" type="hidden" value="<%#= item.quantity %>" /> -->
+    <%# end %>
     
+    <!-- This should be filled so that the description field, on PayPal pages, doesn't show up as a user input field -->
+    <input id="item_name" name="item_name" type="hidden" value="Rui" />
+
     <input id="currency_code" name="currency_code" type="hidden" value="<%= payment_method.preferred_currency %>" />
     <input id="handling_cart" name="handling_cart" type="hidden" value="<%= @order.ship_total %>" /> 
     <input id="tax_cart"      name="tax_cart"      type="hidden" value="<%= @order.tax_total %>" />
     
-    
-    <input id="cmd" name="cmd" type="hidden" value="_cart" />
+    <input id="cmd" name="cmd" type="hidden" value="_xclick-subscriptions" />
+    <input type="hidden" name="a3" value="<%= @order.total.round(2) %>"> 
+    <input type="hidden" name="p3" value="1"> 
+    <input type="hidden" name="t3" value="M"> 
     <input type="hidden" name="upload" value="1" />
     <input id="notify_url" name="notify_url" type="hidden" value="<%= payment_notifications_url %>" />
     <input type="hidden" name="rm" value ="2" />
     <input id="return" name="return" type="hidden" value="<%= payment_method.preferred_success_url %>" />
-    
+    <input id="custom" name="custom" type="hidden" value="<%= @order.payments.last.identifier %>" />
+
     <input id="charset" name="charset" type="hidden" value="utf-8" />
     
     <% if(payment_method.preferred_populate_address && @order.bill_address) %>
@@ -50,7 +56,8 @@
       <input type="hidden"  name="zip"         id="zip"      value="<%= @order.bill_address.zipcode %>"     />
       <input type="hidden"  name="night_phone_b"         id="night_phone_b"      value="<%= @order.bill_address.phone %>"     />
     <% end %>
-  <% end %>
+  <% end %> 
+
   <%= submit_tag "Checkout usign PayPal!" %>
 
 <% end -%>

@@ -1,8 +1,9 @@
 # commented-out as this is too invasive at the moment 
 # (assumes paypal is the only payment method available in your store)
 
-begin 
+Spree::CheckoutController.class_eval do
   def edit
+    puts "NINJA IN DECORATED CONTROLLER!!"
     if ((@order.state == "payment") && @order.valid?)
       puts "valid, processing"
       if @order.payable_via_paypal?
@@ -16,5 +17,4 @@ begin
       end
     end
   end
-end
 end

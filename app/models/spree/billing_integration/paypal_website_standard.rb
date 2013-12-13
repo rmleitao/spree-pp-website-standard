@@ -1,10 +1,5 @@
 class Spree::BillingIntegration::PaypalWebsiteStandard < Spree::BillingIntegration
 
-  # attr_accessible :preferred_account_email, :preferred_ipn_notify_host, :preferred_success_url, 
-  #  :preferred_paypal_url, :preferred_encryption, :preferred_certificate_id, 
-  #  :preferred_currency, :preferred_language,
-  #  :preferred_server, :preferred_test_mode
-
   require 'rbconfig'
 
   preference :account_email, :string
@@ -21,6 +16,13 @@ class Spree::BillingIntegration::PaypalWebsiteStandard < Spree::BillingIntegrati
   preference :populate_address, :boolean, :default => true
 
   def payment_profiles_supported?
+    false
+  end
+
+  # rmleitao
+  # so that /models/spree/payment/processing.rb doesn't try to contact a payment gateway to capture money automatically.
+  # with paypal, the money has already been captured.
+  def source_required?
     false
   end
 

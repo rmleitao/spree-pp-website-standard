@@ -4,50 +4,79 @@ module Spree
     skip_before_filter :restriction_access
     
     def create
-      if(Spree::PaypalWebsiteStandard::Config.encrypted && (params[:secret] != Spree::PaypalWebsiteStandard::Config.ipn_secret))
+      payment_method = Spree::BillingIntegration::PaypalWebsiteStandard.first
+      if(payment_method.preferred_encryption && (params[:secret] != payment_method.preferred_ipn_secret))
         logger.info "PayPal_Website_Standard: attempt to send an IPN with invalid secret"
         raise Exception
       end
-      
-      @order = Spree::Order.find_by_number(params[:invoice])
-      Spree::PaymentNotification.create!(:params => params,
-        :order_id => @order.id,
-        :status => params[:payment_status],
-        :transaction_id => params[:txn_id])
-      
-      logger.info "PayPal_Website_Standard: processing payment notification for invoice #{params["invoice"]}, amount is #{params["mc_gross"]} #{params["mc_currency"]}"
-      # this logging stuff won't live here for long...
-      
-      Order.transaction do
-      # main part of hacks
-        order = @order
-        
-        #create payment for this order
-        payment = Spree::Payment.new
-        
-        # 1. Assume that if payment notification comes, it's exactly for the amount
-        # sent to paypal (safe assumption -- cart can't be edited while on paypal)
-        # 2. Can't use Order#total, as it's intercepted by spree-multi-currency
-        # which might lead to lots of false "credit owed" payment states
-        # (when they should be "complete")
-        payment.amount = order.read_attribute(:total)
-        logger.info "PayPal_Website_Standard: set payment.amount to #{payment.amount} based on order's total #{order.read_attribute(:total)}"
-        
-        payment.payment_method = Spree::Order.paypal_payment_method
-        order.payments << payment
-        payment.started_processing
-        
-        order.payment.complete
-        logger.info("PayPal_Website_Standard: order #{order.number} (#{order.id}) -- completed payment")
 
-        until @order.state == "complete"
-          if @order.next!
-            @order.update!
-            state_callback(:after)
+      case params[:txn_type]
+      when "recurring_payment"
+        # TODO
+      when "recurring_payment_expired"
+      when "recurring_payment_failed"
+      when "recurring_payment_profile_created"
+      when "recurring_payment_profile_canceled"
+      when "recurring_payment_skipped"
+      when "recurring_payment_suspended"
+      when "recurring_payment_suspended_due_to_max_failed_payment"
+      when "cart"
+        @order = Spree::Order.find_by_number(params[:invoice])
+        if @order.nil?
+          logger.info "PayPal IPN processing error: Order #{params[:invoice]} not found."
+          raise Exception
+        end
+
+        Spree::PaymentNotification.create!(
+          :params => params,
+          :order_id => @order.id,
+          :status => params[:payment_status],
+          :transaction_id => params[:txn_id])
+        
+        # load the payment object; should have been created when order transitioned to "payment"
+        existing_payment = @order.payments.find_by_identifier(params[:custom])
+        if existing_payment.nil?
+          logger.info "PayPal IPN processing error: Payment with identifier #{params[:custom]} not found for order #{params[:invoice]}."
+          raise Exception
+        end
+
+        # rmleitao:
+        # Create payment for this order
+        # Even though Spree automatically creates a Payment object once the user reaches the payment order state
+        # we should create a new Payment that reflects exactly what Paypal IPN is telling us that was paid.
+        # We need a Payment object in the state Checkout, so that the Order state machine can transition to completed
+        @payment = Spree::Payment.new
+        @payment.amount = params[:mc_gross]
+        @payment.payment_method = existing_payment.payment_method
+
+        @order.payments << @payment
+
+        @payment.payment_method = Spree::Order.paypal_payment_method
+        @payment.started_processing!
+
+        # rmleitao:
+        # Check the PayPal IPN status. If complete, complete the payment.
+        # All other states should render the payment as failed
+        case params[:payment_status]
+        when "Completed"
+          # The Payment has been captured, and if IPN says so, the money is in the PayPal account.
+          # So it's safe to say the Payment can be "completed"
+          @payment.complete!
+        else
+          @payment.failure!
+        end
+        @order.save!
+
+        Order.transaction do
+          order = @order
+          until @order.state == "complete"
+            if @order.next!
+              @order.update!
+              state_callback(:after)
+            end
           end
         end
 
-        logger.info("PayPal_Website_Standard: Order #{order.number} (#{order.id}) updated successfully, IPN complete")
       end
       
       render :nothing => true
@@ -82,7 +111,7 @@ module Spree
     end
     
     def default_country
-      Country.find Spree::PaypalWebsiteStandard::Config.default_country_id
+      Country.find Spree::BillingIntegration::PaypalWebsiteStandard::Config.default_country_id
     end
     
   end
