@@ -14,12 +14,34 @@ module Spree
       when "recurring_payment"
         # TODO
       when "recurring_payment_expired"
+        # TODO
       when "recurring_payment_failed"
+        # TODO
       when "recurring_payment_profile_created"
+        # TODO
       when "recurring_payment_profile_canceled"
+        # TODO
       when "recurring_payment_skipped"
+        # TODO
       when "recurring_payment_suspended"
+        # TODO
       when "recurring_payment_suspended_due_to_max_failed_payment"
+        # TODO
+      when "subscr_signup"
+        # when a user created a new subscription.
+      when "subscr_payment"
+        # when a payment for a subscription has landed.
+      when "subscr_modify"
+        # when a user modifies a subscription.
+      when "subscr_failed"
+        # when a payment failed.
+      when "subscr_eot"
+        # when a suscription naturally ended.
+      when "subscr_cancel"
+        # when a suscription was cancelled. either:
+        # - max failed attempts reached.
+        # - admin cancelled the subscription.
+        # - user cancelled the subscription.
       when "cart"
         @order = Spree::Order.find_by_number(params[:invoice])
         if @order.nil?
