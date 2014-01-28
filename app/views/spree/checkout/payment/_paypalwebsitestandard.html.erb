@@ -11,13 +11,13 @@
     <%= hidden_field_tag(:cmd, "_s-xclick") %>
     <%= hidden_field_tag(:encrypted, @order.paypal_encrypted(payment_method, payment_notifications_url(:secret => payment_method.preferred_ipn_secret))) %>
   <% else %>
-  
+
     <input id="page_style"    name="page_style"     type="hidden" value="<%= payment_method.preferred_page_style %>"/>
     <input id="business"      name="business"       type="hidden" value="<%= payment_method.preferred_account_email %>" />
     <input id="invoice"       name="invoice"        type="hidden" value="<%= @order.number %>" />
         
     <!-- This should be filled so that the description field, on PayPal pages, doesn't show up as a user input field -->
-    <input id="item_name"     name="item_name"      type="hidden" value="Rui" />
+    <input id="item_name"     name="item_name"      type="hidden" value="<%= subscription_name(@order) %>" />
 
     <input id="currency_code" name="currency_code"  type="hidden" value="<%= payment_method.preferred_currency %>" />
     <input id="handling_cart" name="handling_cart"  type="hidden" value="<%= @order.ship_total %>" /> 
@@ -34,13 +34,13 @@
 
     <!-- for testing purposes -->
     <!-- <input id="notify_url" name="notify_url" type="hidden" value="<%= payment_notifications_url %>" /> -->
-    <input id="notify_url"    name="notify_url"     type="hidden" value="https://rmleitao.pagekite.me/payment_notifications" />
+    <input id="notify_url"    name="notify_url"     type="hidden" value="<%= payment_method.preferred_ipn_notify_host %>" />
     
     <!-- <input type="hidden" name="rm" value ="2" /> -->
 
     <input id="return"        name="return"         type="hidden" value="<%= payment_method.preferred_success_url %>" />
     <input id="custom"        name="custom"         type="hidden" value="<%= @order.payments.last.identifier %>" />
-    <input id="charset"       name="charset"        type="hidden" value="utf-8" />
+    <input id="charset"       name="charset"        type="hidden" value="UTF-8" />
     
     <% if(payment_method.preferred_populate_address && @order.bill_address) %>
       <input type="hidden"  name="address1"    id="address1" value="<%= @order.bill_address.address1 %>" />

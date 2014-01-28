@@ -29,8 +29,113 @@ module Spree
         # TODO
       when "subscr_signup"
         # when a user created a new subscription.
+        # create a subscription object, attach the original order to it.
+        # when we redirect the user to paypal, we are sending order.number in the invoice field.
+        # when paypal notifies that a subscription has been created, it sends that order number in the invoice field.
+        # it also sends its internal subscription_id, which we should use, 
+        # given that every subsquent payment will use that subscription_id to identify it.
+        @order = Spree::Order.find_by_number(params[:invoice])
+        if @order.nil?
+          logger.info "PayPal IPN processing error [subscr_signup]: Order #{params[:invoice]} not found."
+          raise Exception
+        end
+
+        # create and save the payment notification object
+        Spree::PaymentNotification.create!(
+          #:params => params,
+          :order_id => @order.id,
+          :status => "subscription_created",
+          :transaction_id => nil
+        )
+
+        # create the subscription object
+        Spree::Subscription.create!(
+          :user_id => @order.user_id,
+          :paypal_invoice => params[:invoice],
+          :paypal_subscription_id => params[:subscr_id],
+          :original_order_id => @order.id
+        )
+
+        # cancel the original order
+        @order.cancel
+
       when "subscr_payment"
         # when a payment for a subscription has landed.
+        # create a new order, based on the original one saved.
+        # we know which Subscription it is, because it sends the subscription_id field set.
+        # then we should fetch that subscription's original order and clone it.
+
+        # fetch the Order
+        @order = Spree::Order.find_by_number(params[:invoice])
+        if @order.nil?
+          logger.info "PayPal IPN processing error [subscr_payment]: Order #{params[:invoice]} not found."
+          raise Exception
+        end
+
+        @subscription = Spree::Subscription.find_by_paypal_subscription_id(params[:subscr_id])
+        if @order.nil?
+          logger.info "PayPal IPN processing error [subscr_payment]: Order #{params[:invoice]} not found."
+          raise Exception
+        end
+
+        # store the PaymentNotification in the db
+        Spree::PaymentNotification.create!(
+          #:params => params,
+          :order_id => @order.id,
+          :status => params[:payment_status],
+          :transaction_id => params[:txn_id]
+        )
+
+        # create and transition the Payment object
+        @payment = Spree::Payment.new
+        @payment.amount = params[:mc_gross]
+        @payment.payment_method = Spree::Order.paypal_payment_method
+
+        # create a new order, cloning the original one.
+        new_order = @order.dup
+        @payment.order = new_order
+        @payment.save
+
+        # @payment.started_processing!
+
+        @subscription.orders << new_order
+
+        # clone its line_items
+        @order.line_items.each do |line_item|
+          new_line_item = line_item.dup
+          new_order.line_items << new_line_item
+        end
+
+        # clone its adjustments
+        @order.adjustments.each do |adjustment|
+          new_adjustment = adjustment.dup
+          new_order.adjustments << new_adjustment
+        end
+
+        # Check the PayPal IPN status. If complete, complete the payment.
+        # All other states should render the payment as failed
+        case params[:payment_status]
+        when "Completed"
+          # The Payment has been captured, and if IPN says so, the money is in the PayPal account.
+          # So it's safe to say the Payment can be "completed"
+          # commented out because spree was complaining it can't close the order because there are no pending payments.
+          # @payment.complete!
+        else
+          @payment.failure!
+        end
+        new_order.save!
+
+        # transition the order to "complete"
+        Order.transaction do
+          order = @order
+          until @order.state == "complete"
+            if @order.next!
+              @order.update!
+              state_callback(:after)
+            end
+          end
+        end
+
       when "subscr_modify"
         # when a user modifies a subscription.
       when "subscr_failed"
