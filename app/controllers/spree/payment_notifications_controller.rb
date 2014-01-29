@@ -73,8 +73,8 @@ module Spree
         end
 
         @subscription = Spree::Subscription.find_by_paypal_subscription_id(params[:subscr_id])
-        if @order.nil?
-          logger.info "PayPal IPN processing error [subscr_payment]: Order #{params[:invoice]} not found."
+        if @subscription.nil?
+          logger.info "PayPal IPN processing error [subscr_payment]: Subscription #{params[:subscr_id]} not found."
           raise Exception
         end
 
@@ -88,15 +88,13 @@ module Spree
 
         # create and transition the Payment object
         @payment = Spree::Payment.new
-        @payment.amount = params[:mc_gross]
+        @payment.amount = BigDecimal.new(params[:mc_gross])
         @payment.payment_method = Spree::Order.paypal_payment_method
 
         # create a new order, cloning the original one.
         new_order = @order.dup
         @payment.order = new_order
         @payment.save
-
-        # @payment.started_processing!
 
         @subscription.orders << new_order
 
@@ -119,18 +117,23 @@ module Spree
           # The Payment has been captured, and if IPN says so, the money is in the PayPal account.
           # So it's safe to say the Payment can be "completed"
           # commented out because spree was complaining it can't close the order because there are no pending payments.
-          # @payment.complete!
+          @payment.complete!
         else
           @payment.failure!
         end
         new_order.save!
 
+        if !@order.completed?
+          @order.update_attribute(:completed_at, Time.now)
+          @order.cancel
+        end
+
         # transition the order to "complete"
         Order.transaction do
-          order = @order
-          until @order.state == "complete"
-            if @order.next!
-              @order.update!
+          #order = new_order
+          until new_order.state == "complete"
+            if new_order.next!
+              new_order.update!
               state_callback(:after)
             end
           end
