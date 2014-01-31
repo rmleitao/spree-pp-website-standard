@@ -1,9 +1,8 @@
-# commented-out as this is too invasive at the moment 
-# (assumes paypal is the only payment method available in your store)
+# need to create a new payment object in the order, otherwise the view partial will not render.
+# it needs to generate a new payment with "identifier", that will be sent to paypal.
 
 Spree::CheckoutController.class_eval do
   def edit
-    puts "NINJA IN DECORATED CONTROLLER!!"
     if ((@order.state == "payment") && @order.valid?)
       puts "valid, processing"
       if @order.payable_via_paypal?

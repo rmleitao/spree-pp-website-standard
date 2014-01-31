@@ -116,7 +116,6 @@ module Spree
         when "Completed"
           # The Payment has been captured, and if IPN says so, the money is in the PayPal account.
           # So it's safe to say the Payment can be "completed"
-          # commented out because spree was complaining it can't close the order because there are no pending payments.
           @payment.complete!
         else
           @payment.failure!
@@ -143,13 +142,48 @@ module Spree
         # when a user modifies a subscription.
       when "subscr_failed"
         # when a payment failed.
+        # a payment failed, we shouldn't need to do anything.
+        # maybe in the future just update a count of failed_payments in the subscription object.
       when "subscr_eot"
         # when a suscription naturally ended.
+        # just change the subscription state, no new payments will be received, so no new orders will be generated.
+
+        @subscription = Spree::Subscription.find_by_paypal_subscription_id(params[:subscr_id])
+        if @subscription.nil?
+          logger.info "PayPal IPN processing error [subscr_eot]: Subscription #{params[:subscr_id]} not found."
+          raise Exception
+        end
+
+        Spree::PaymentNotification.create!(
+          #:params => params,
+          :order_id => @order.id,
+          :status => "subscription_created",
+          :transaction_id => nil
+        )
+
+        @subscription.end
+
       when "subscr_cancel"
         # when a suscription was cancelled. either:
         # - max failed attempts reached.
         # - admin cancelled the subscription.
         # - user cancelled the subscription.
+        # just change the subscription state, no new payments will be received, so no new orders will be generated.
+
+        @subscription = Spree::Subscription.find_by_paypal_subscription_id(params[:subscr_id])
+        if @subscription.nil?
+          logger.info "PayPal IPN processing error [subscr_eot]: Subscription #{params[:subscr_id]} not found."
+          raise Exception
+        end
+
+        Spree::PaymentNotification.create!(
+          #:params => params,
+          :order_id => @order.id,
+          :status => "subscription_created",
+          :transaction_id => nil
+        )
+
+        @subscription.cancel
       when "cart"
         @order = Spree::Order.find_by_number(params[:invoice])
         if @order.nil?
@@ -170,7 +204,6 @@ module Spree
           raise Exception
         end
 
-        # rmleitao:
         # Create payment for this order
         # Even though Spree automatically creates a Payment object once the user reaches the payment order state
         # we should create a new Payment that reflects exactly what Paypal IPN is telling us that was paid.
@@ -184,7 +217,6 @@ module Spree
         @payment.payment_method = Spree::Order.paypal_payment_method
         @payment.started_processing!
 
-        # rmleitao:
         # Check the PayPal IPN status. If complete, complete the payment.
         # All other states should render the payment as failed
         case params[:payment_status]

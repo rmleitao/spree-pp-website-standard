@@ -32,11 +32,9 @@
 
     <input id="upload"        name="upload"         type="hidden" value="1" />
 
-    <!-- for testing purposes -->
-    <!-- <input id="notify_url" name="notify_url" type="hidden" value="<%= payment_notifications_url %>" /> -->
     <input id="notify_url"    name="notify_url"     type="hidden" value="<%= payment_method.preferred_ipn_notify_host %>" />
     
-    <!-- <input type="hidden" name="rm" value ="2" /> -->
+    <input id="rm"            name="rm"             type="hidden" value ="2" />
 
     <input id="return"        name="return"         type="hidden" value="<%= payment_method.preferred_success_url %>" />
     <input id="custom"        name="custom"         type="hidden" value="<%= @order.payments.last.identifier %>" />
