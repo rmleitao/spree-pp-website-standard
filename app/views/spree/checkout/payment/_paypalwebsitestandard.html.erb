@@ -1,4 +1,4 @@
-<%- if Rails.env.development?
+<%- if payment_method.preferred_test_mode
       submit_url = payment_method.preferred_sandbox_url
     else
       submit_url = payment_method.preferred_paypal_url
