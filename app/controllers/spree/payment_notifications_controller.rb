@@ -110,6 +110,12 @@ module Spree
           new_order.adjustments << new_adjustment
         end
 
+        # clone its shipment
+        @order.shipments.each do |shipment|
+          new_shipment = shipment.dup
+          new_order.shipments << new_shipment
+        end
+
         # Check the PayPal IPN status. If complete, complete the payment.
         # All other states should render the payment as failed
         case params[:payment_status]
