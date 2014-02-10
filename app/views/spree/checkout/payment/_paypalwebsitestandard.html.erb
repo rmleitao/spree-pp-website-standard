@@ -34,9 +34,10 @@
 
     <input id="notify_url"    name="notify_url"     type="hidden" value="<%= payment_method.preferred_ipn_notify_host %>" />
     
-    <input id="rm"            name="rm"             type="hidden" value ="2" />
+    <!-- return method: users return to the store via a GET request -->
+    <input id="rm"            name="rm"             type="hidden" value ="1" />
 
-    <input id="return"        name="return"         type="hidden" value="<%= payment_method.preferred_success_url %>" />
+    <input id="return"        name="return"         type="hidden" value="<%= spree.order_url(@order) %>" />
     <input id="custom"        name="custom"         type="hidden" value="<%= @order.payments.last.identifier %>" />
     <input id="charset"       name="charset"        type="hidden" value="UTF-8" />
     
