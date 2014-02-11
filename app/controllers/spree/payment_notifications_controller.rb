@@ -116,6 +116,9 @@ module Spree
           new_order.shipments << new_shipment
         end
 
+        # add the transaction_id to the new order, so we know what generated it.
+        new_order.paypal_transaction_id = params[:txn_id]
+
         # Check the PayPal IPN status. If complete, complete the payment.
         # All other states should render the payment as failed
         case params[:payment_status]
@@ -142,6 +145,40 @@ module Spree
               state_callback(:after)
             end
           end
+        end
+
+        # # check if user has credit left
+        # # if so, deduct credit and issue a refund in the same amount.
+        # if @order.user.credit_left > 0
+        #   # if credit covers the total of the payment, the amount to deduct and refund is the payment total.
+        #   if @order.user.credit_left >= @payment.amount
+        #     amount = @payment.amount
+        #     data = {
+        #       :version => "109.0",
+        #       :method => "RefundTransaction",
+        #       :refundtype => "Full",
+        #       :transactionid => params[:txn_id]
+        #     }
+        #   # if credit does not cover the total of the payment, the amount to deduct and refund is the current credit.
+        #   else
+        #     amount = @order.user.credit_left
+        #     data = {
+        #       :version => "109.0",
+        #       :method => "RefundTransaction",
+        #       :refundtype => "Partial",
+        #       :amt => amount,
+        #       :transactionid => params[:txn_id]
+        #     }
+        #   end
+
+        #   # deduct.
+        #   @order.user.deduct_credit(amount)
+
+        #   # refund.
+        #   # TODO: logical test to define if sandbox mode or not. TRUE=Sandbox.
+        #   p = PaypalNVP.new(true)
+        #   result = p.call_paypal(data)
+        #   logger.debug "PAYPAL REFUND RESPONSE: #{result}"
         end
 
       when "subscr_modify"
