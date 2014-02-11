@@ -5,7 +5,7 @@
     end
 %>
 
-<%= form_tag submit_url do %> 
+<%= form_tag submit_url, {:id => "pp-website-standard", :style => "display:none;"} do %> 
   
   <%- if(payment_method.preferred_encryption) %>
     <%= hidden_field_tag(:cmd, "_s-xclick") %>
