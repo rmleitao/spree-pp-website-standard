@@ -48,17 +48,6 @@ module Spree
           :transaction_id => nil
         )
 
-        # create the subscription object
-        Spree::Subscription.create!(
-          :user_id => @order.user_id,
-          :paypal_invoice => params[:invoice],
-          :paypal_subscription_id => params[:subscr_id],
-          :original_order_id => @order.id
-        )
-
-        # cancel the original order
-        @order.cancel
-
         # Check if the user has previous subscriptions. if so, we should cancel them.
         # Important: there is an IPN for subscription cancelling. From my tests this doesn't conflict because apparently, 
         # when a subscription is cancelled via API call, as we're doing here, no IPN is triggered, so we will not be cancelling
@@ -83,6 +72,17 @@ module Spree
           subscription.cancel
           logger.info "PayPal IPN info [subscr_signup]: Subscription #{subscription.paypal_subscription_id} cancelled in Spree."
         end
+
+        # create the subscription object
+        Spree::Subscription.create!(
+          :user_id => @order.user_id,
+          :paypal_invoice => params[:invoice],
+          :paypal_subscription_id => params[:subscr_id],
+          :original_order_id => @order.id
+        )
+
+        # cancel the original order
+        @order.cancel
 
       when "subscr_payment"
         # when a payment for a subscription has landed.
