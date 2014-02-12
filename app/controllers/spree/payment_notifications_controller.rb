@@ -59,6 +59,31 @@ module Spree
         # cancel the original order
         @order.cancel
 
+        # Check if the user has previous subscriptions. if so, we should cancel them.
+        # Important: there is an IPN for subscription cancelling. From my tests this doesn't conflict because apparently, 
+        # when a subscription is cancelled via API call, as we're doing here, no IPN is triggered, so we will not be cancelling
+        # the previous subscription twice.
+        @order.user.subscriptions.with_state("ongoing").each do |subscription|
+          # cancel the paypal subscription
+          data = {
+            :version => "109.0",
+            :method => "ManageRecurringPaymentsProfileStatus",
+            :profileid => subscription.paypal_subscription_id,
+            :action => "Cancel",
+            :note => "Cancelled due to plan upgrade."
+          }
+          p = PaypalNVP.new(true)
+          result = p.call_paypal(data)
+          if result["ACK"] == "Success"
+            logger.info "PayPal IPN info [subscr_signup]: Subscription #{subscription.paypal_subscription_id} cancelled in PayPal."
+          else
+            logger.info "PayPal IPN error [subscr_signup]: Subscription #{subscription.paypal_subscription_id} failed to cancel in PayPal."
+          end
+          # cancel the database subscription
+          subscription.cancel
+          logger.info "PayPal IPN info [subscr_signup]: Subscription #{subscription.paypal_subscription_id} cancelled in Spree."
+        end
+
       when "subscr_payment"
         # when a payment for a subscription has landed.
         # create a new order, based on the original one saved.
