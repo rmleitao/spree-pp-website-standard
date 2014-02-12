@@ -204,7 +204,7 @@ module Spree
         #   p = PaypalNVP.new(true)
         #   result = p.call_paypal(data)
         #   logger.debug "PAYPAL REFUND RESPONSE: #{result}"
-        end
+        # end
 
       when "subscr_modify"
         # when a user modifies a subscription.
