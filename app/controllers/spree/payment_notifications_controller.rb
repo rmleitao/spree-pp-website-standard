@@ -246,12 +246,14 @@ module Spree
 
         Spree::PaymentNotification.create!(
           #:params => params,
-          :order_id => @order.id,
-          :status => "subscription_created",
+          :order_id => nil,
+          :status => "subscription_cancelled",
           :transaction_id => nil
         )
 
-        @subscription.cancel
+        if !@subscription.cancelled?
+          @subscription.cancel
+        end
       when "cart"
         @order = Spree::Order.find_by_number(params[:invoice])
         if @order.nil?
