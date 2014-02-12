@@ -197,7 +197,7 @@ module Spree
         #   end
 
         #   # deduct.
-        #   @order.user.deduct_credit(amount)
+        #   @order.user.deduct_credit(amount, order)
 
         #   # refund.
         #   # TODO: logical test to define if sandbox mode or not. TRUE=Sandbox.
