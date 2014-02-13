@@ -172,39 +172,33 @@ module Spree
           end
         end
 
-        # # check if user has credit left
-        # # if so, deduct credit and issue a refund in the same amount.
-        # if @order.user.credit_left > 0
-        #   # if credit covers the total of the payment, the amount to deduct and refund is the payment total.
-        #   if @order.user.credit_left >= @payment.amount
-        #     amount = @payment.amount
-        #     data = {
-        #       :version => "109.0",
-        #       :method => "RefundTransaction",
-        #       :refundtype => "Full",
-        #       :transactionid => params[:txn_id]
-        #     }
-        #   # if credit does not cover the total of the payment, the amount to deduct and refund is the current credit.
-        #   else
-        #     amount = @order.user.credit_left
-        #     data = {
-        #       :version => "109.0",
-        #       :method => "RefundTransaction",
-        #       :refundtype => "Partial",
-        #       :amt => amount,
-        #       :transactionid => params[:txn_id]
-        #     }
-        #   end
+        # when the order is completed, a trigger will automatically be called to consume user credits.
+        # fetch that amount and refund in paypal.
+        if !new_order.credit_transaction.nil?
+          logger.info "PayPal IPN info [subscr_payment]: consumed user credits. Started PayPal refund processing."
+          if new_order.credit_transaction.amount >= @payment.amount
+            data = {
+              :version => "109.0",
+              :method => "RefundTransaction",
+              :refundtype => "Full",
+              :transactionid => params[:txn_id]
+            }
+            logger.info "PayPal IPN info [subscr_payment]: Processing full refund."
+          else
+            data = {
+              :version => "109.0",
+              :method => "RefundTransaction",
+              :refundtype => "Partial",
+              :amt => new_order.credit_transaction.amount,
+              :transactionid => params[:txn_id]
+            }
+            logger.info "PayPal IPN info [subscr_payment]: Processing partial refund of #{new_order.credit_transaction.amount}."
+          end
 
-        #   # deduct.
-        #   @order.user.deduct_credit(amount, order)
-
-        #   # refund.
-        #   # TODO: logical test to define if sandbox mode or not. TRUE=Sandbox.
-        #   p = PaypalNVP.new(true)
-        #   result = p.call_paypal(data)
-        #   logger.debug "PAYPAL REFUND RESPONSE: #{result}"
-        # end
+          p = PaypalNVP.new(payment_method.preferred_test_mode)
+          result = p.call_paypal(data)
+          logger.info "PayPal IPN [subscr_payment] NVP Refund response: #{result}"
+        end
 
       when "subscr_modify"
         # when a user modifies a subscription.
