@@ -42,7 +42,7 @@ module Spree
 
         # create and save the payment notification object
         Spree::PaymentNotification.create!(
-          #:params => params,
+          :params => params,
           :order_id => @order.id,
           :status => "subscription_created",
           :transaction_id => nil
@@ -105,7 +105,7 @@ module Spree
 
         # store the PaymentNotification in the db
         Spree::PaymentNotification.create!(
-          #:params => params,
+          :params => params,
           :order_id => @order.id,
           :status => params[:payment_status],
           :transaction_id => params[:txn_id]
@@ -217,7 +217,7 @@ module Spree
         end
 
         Spree::PaymentNotification.create!(
-          #:params => params,
+          :params => params,
           :order_id => @order.id,
           :status => "subscription_created",
           :transaction_id => nil
@@ -239,7 +239,7 @@ module Spree
         end
 
         Spree::PaymentNotification.create!(
-          #:params => params,
+          :params => params,
           :order_id => nil,
           :status => "subscription_cancelled",
           :transaction_id => nil
@@ -273,7 +273,7 @@ module Spree
         # we should create a new Payment that reflects exactly what Paypal IPN is telling us that was paid.
         # We need a Payment object in the state Checkout, so that the Order state machine can transition to completed
         @payment = Spree::Payment.new
-        @payment.amount = params[:mc_gross]
+        @payment.amount = BigDecimal.new(params[:mc_gross])
         @payment.payment_method = existing_payment.payment_method
 
         @order.payments << @payment
