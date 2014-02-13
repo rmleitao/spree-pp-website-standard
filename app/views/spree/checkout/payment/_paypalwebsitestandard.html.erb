@@ -15,20 +15,25 @@
     <input id="page_style"    name="page_style"     type="hidden" value="<%= payment_method.preferred_page_style %>"/>
     <input id="business"      name="business"       type="hidden" value="<%= payment_method.preferred_account_email %>" />
     <input id="invoice"       name="invoice"        type="hidden" value="<%= @order.number %>" />
-        
-    <!-- This should be filled so that the description field, on PayPal pages, doesn't show up as a user input field -->
-    <input id="item_name"     name="item_name"      type="hidden" value="<%= subscription_name(@order) %>" />
-
+    
     <input id="currency_code" name="currency_code"  type="hidden" value="<%= payment_method.preferred_currency %>" />
     <input id="handling_cart" name="handling_cart"  type="hidden" value="<%= @order.ship_total %>" /> 
     <input id="tax_cart"      name="tax_cart"       type="hidden" value="<%= @order.tax_total %>" />
     
-    <input id="cmd"           name="cmd"            type="hidden" value="_xclick-subscriptions" />
-    <input id="a3"            name="a3"             type="hidden" value="<%= @order.total.round(2) %>">
-    <input id="p3"            name="p3"             type="hidden" value="1">
-    <input id="t3"            name="t3"             type="hidden" value="M">
-    <input id="src"           name="src"            type="hidden" value="1">
-    <input id="srt"           name="srt"            type="hidden" value="52">
+    <% if @order.is_subscription? %> 
+      <input id="cmd"           name="cmd"            type="hidden" value="_xclick-subscriptions" />
+      <!-- This should be filled so that the description field, on PayPal pages, doesn't show up as a user input field -->
+      <input id="item_name"     name="item_name"      type="hidden" value="<%= subscription_name(@order) %>" />
+      <input id="a3"            name="a3"             type="hidden" value="<%= @order.total.round(2) %>">
+      <input id="p3"            name="p3"             type="hidden" value="1">
+      <input id="t3"            name="t3"             type="hidden" value="M">
+      <input id="src"           name="src"            type="hidden" value="1">
+      <input id="srt"           name="srt"            type="hidden" value="52">
+    <% else %>
+      <input id="cmd"           name="cmd"            type="hidden" value="_cart" />
+      <input id="item_name_1"   name="item_name_1"    type="hidden" value="<%= @order.line_items.first.name %>" />
+      <input id="amount_1"      name="amount_1"       type="hidden" value="<%= @order.total.round(2) %>">
+    <% end %>
 
     <input id="upload"        name="upload"         type="hidden" value="1" />
 
