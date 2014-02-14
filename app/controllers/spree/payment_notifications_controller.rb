@@ -61,7 +61,7 @@ module Spree
             :action => "Cancel",
             :note => "Cancelled due to plan upgrade."
           }
-          p = PaypalNVP.new(true)
+          p = PaypalNVP.new(payment_method.preferred_test_mode)
           result = p.call_paypal(data)
           if result["ACK"] == "Success"
             logger.info "PayPal IPN info [subscr_signup]: Subscription #{subscription.paypal_subscription_id} cancelled in PayPal."
